@@ -9,14 +9,12 @@ const buildCrudRouter = ({
   authGuard = null,
   nullableFields = [],
   dateFields = [], // Các field là date/datetime cần format
+  uniqueFields = [], // Các field cần kiểm tra tính duy nhất 
 }) => {
   const router = express.Router();
 
-  // Helper function để format date fields trong response
-  // QUAN TRỌNG: Format date fields để tránh timezone issues
-  // Nếu MySQL driver trả về Date object, nó có thể bị ảnh hưởng bởi timezone
-  // Cách tốt nhất là sử dụng DATE_FORMAT trong query (như students.js)
-  // Nhưng vì crudFactory là generic, ta format sau khi query
+  //  Format date fields để tránh timezone issues
+
   const formatDateFields = (rows) => {
     if (!dateFields.length || !rows || !Array.isArray(rows)) return rows;
     
@@ -32,8 +30,7 @@ const buildCrudRouter = ({
           
           if (formatted[field] instanceof Date) {
             // Format Date object thành YYYY-MM-DD string
-            // QUAN TRỌNG: Sử dụng local date methods, không dùng UTC
-            // Vì MySQL lưu date như local date, không có timezone
+
             const year = formatted[field].getFullYear();
             const month = String(formatted[field].getMonth() + 1).padStart(2, '0');
             const day = String(formatted[field].getDate()).padStart(2, '0');
@@ -81,14 +78,14 @@ const buildCrudRouter = ({
       }
       const params = [];
       
-      // Search
+      // Tìm kiếm
       if (q && searchableFields.length) {
         const likeClause = searchableFields.map((field) => `${field} LIKE ?`).join(' OR ');
         sql += ` WHERE ${likeClause}`;
         searchableFields.forEach(() => params.push(`%${q}%`));
       }
       
-      // Pagination
+      // Phân trang
       const limit = limitParam ? parseInt(limitParam) : null;
       const offset = page && limit ? (parseInt(page) - 1) * limit : null;
       
@@ -107,7 +104,7 @@ const buildCrudRouter = ({
       // Không cần format nữa vì đã dùng DATE_FORMAT trong query (nếu có dateFields)
       const formattedRows = dateFields.length > 0 ? rows : formatDateFields(rows);
       
-      // Get total count for pagination
+      // Lấy tổng số bản ghi cho phân trang
       if (limit) {
         let countSql = `SELECT COUNT(*) AS total FROM ${tableName}`;
         const countParams = [];
@@ -183,19 +180,19 @@ const buildCrudRouter = ({
     try {
       const payload = req.body;
       
-      // Clean up payload - remove undefined values and handle booleans
+      // Dọn dẹp payload - loại bỏ giá trị undefined và xử lý boolean
       const cleanPayload = {};
       Object.keys(payload).forEach((key) => {
         if (payload[key] !== undefined && payload[key] !== null && payload[key] !== '') {
           let value = payload[key];
           
-          // Convert ISO datetime strings to MySQL DATETIME format
+          // Chuyển đổi chuỗi datetime ISO sang định dạng DATETIME của MySQL
           if (typeof value === 'string' && value.includes('T') && value.includes('Z')) {
-            // ISO format: 2025-11-25T18:13:00.000Z -> MySQL: 2025-11-25 18:13:00
+            // Định dạng ISO: 2025-11-25T18:13:00.000Z -> MySQL: 2025-11-25 18:13:00
             value = value.slice(0, 19).replace('T', ' ');
           }
           
-          // Convert boolean strings to actual booleans
+          // Chuyển đổi chuỗi boolean thành boolean thực
           if (value === 'true') {
             cleanPayload[key] = true;
           } else if (value === 'false') {
@@ -205,6 +202,24 @@ const buildCrudRouter = ({
           }
         }
       });
+      
+      // Kiểm tra tính duy nhất của các trường uniqueFields
+      if (uniqueFields.length > 0) {
+        for (const field of uniqueFields) {
+          if (cleanPayload[field] !== undefined && cleanPayload[field] !== null && cleanPayload[field] !== '') {
+            const [existing] = await pool.query(
+              `SELECT ${idField} FROM ${tableName} WHERE ${field} = ?`,
+              [cleanPayload[field]]
+            );
+            if (existing.length > 0) {
+              return res.status(409).json({
+                message: `${field === 'phone' ? 'Số điện thoại' : field === 'email' ? 'Email' : field} đã tồn tại trong hệ thống`,
+                field: field,
+              });
+            }
+          }
+        }
+      }
       
       const [result] = await pool.query(`INSERT INTO ${tableName} SET ?`, [cleanPayload]);
       // Build SELECT với DATE_FORMAT cho date fields (giống như students.js)
@@ -237,34 +252,34 @@ const buildCrudRouter = ({
       const id = req.params[idField];
       const payload = req.body;
       
-      // Clean up payload - remove undefined values and handle booleans
+      // Dọn dẹp payload - loại bỏ giá trị undefined và xử lý boolean
       const cleanPayload = {};
       Object.keys(payload).forEach((key) => {
-        // Skip undefined and null (but allow empty string for nullable fields)
+        // Bỏ qua undefined và null (nhưng cho phép chuỗi rỗng cho các trường nullable)
         if (payload[key] === undefined) {
           return;
         }
         
-        // For nullable fields, convert empty string to null
+        // Đối với các trường nullable, chuyển đổi chuỗi rỗng thành null
         if (nullableFields.includes(key) && payload[key] === '') {
           cleanPayload[key] = null;
           return;
         }
         
-        // For other fields, skip empty strings
+        // Đối với các trường khác, bỏ qua chuỗi rỗng
         if (payload[key] === null || payload[key] === '') {
           return;
         }
         
         let value = payload[key];
         
-        // Convert ISO datetime strings to MySQL DATETIME format
+        // Chuyển đổi chuỗi datetime ISO sang định dạng DATETIME của MySQL
         if (typeof value === 'string' && value.includes('T') && value.includes('Z')) {
-          // ISO format: 2025-11-25T18:13:00.000Z -> MySQL: 2025-11-25 18:13:00
+          // Định dạng ISO: 2025-11-25T18:13:00.000Z -> MySQL: 2025-11-25 18:13:00
           value = value.slice(0, 19).replace('T', ' ');
         }
         
-        // Convert boolean strings to actual booleans
+        // Chuyển đổi chuỗi boolean thành boolean thực
         if (value === 'true') {
           cleanPayload[key] = true;
         } else if (value === 'false') {
@@ -273,6 +288,24 @@ const buildCrudRouter = ({
           cleanPayload[key] = value;
         }
       });
+      
+      // Kiểm tra tính duy nhất của các trường uniqueFields (trừ bản ghi hiện tại)
+      if (uniqueFields.length > 0) {
+        for (const field of uniqueFields) {
+          if (cleanPayload[field] !== undefined && cleanPayload[field] !== null && cleanPayload[field] !== '') {
+            const [existing] = await pool.query(
+              `SELECT ${idField} FROM ${tableName} WHERE ${field} = ? AND ${idField} != ?`,
+              [cleanPayload[field], id]
+            );
+            if (existing.length > 0) {
+              return res.status(409).json({
+                message: `${field === 'phone' ? 'Số điện thoại' : field === 'email' ? 'Email' : field} đã tồn tại trong hệ thống`,
+                field: field,
+              });
+            }
+          }
+        }
+      }
       
       const [result] = await pool.query(`UPDATE ${tableName} SET ? WHERE ${idField} = ?`, [
         cleanPayload,

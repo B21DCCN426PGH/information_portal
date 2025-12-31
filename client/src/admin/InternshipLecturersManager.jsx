@@ -8,6 +8,8 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorState } from '../components/ErrorState';
+import { SuccessDialog } from '../components/SuccessDialog';
+import { ErrorDialog } from '../components/ErrorDialog';
 import { Pagination } from '../components/Pagination';
 import { usePagination } from '../hooks/usePagination';
 import { FaSave } from 'react-icons/fa';
@@ -21,6 +23,8 @@ export const InternshipLecturersManager = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [localChanges, setLocalChanges] = useState({});
+  const [successDialog, setSuccessDialog] = useState({ open: false, message: null });
+  const [errorDialog, setErrorDialog] = useState({ open: false, message: null });
 
   const loadPeriods = useCallback(async () => {
     try {
@@ -134,7 +138,10 @@ export const InternshipLecturersManager = () => {
     });
 
     if (updates.length === 0) {
-      alert('Không có thay đổi nào để lưu');
+      setErrorDialog({ 
+        open: true, 
+        message: 'Không có thay đổi nào để lưu'
+      });
       return;
     }
 
@@ -147,11 +154,18 @@ export const InternshipLecturersManager = () => {
         },
         token
       );
-      alert('Lưu thành công!');
+      setSuccessDialog({ 
+        open: true, 
+        message: 'Lưu thành công!'
+      });
       setLocalChanges({});
       await loadLecturers();
     } catch (err) {
-      alert(err.message || 'Lỗi khi Lưu');
+      setErrorDialog({ 
+        open: true, 
+        message: err.message || err.error || 'Lỗi khi lưu',
+        error: err 
+      });
     } finally {
       setSaving(false);
     }
@@ -305,6 +319,19 @@ export const InternshipLecturersManager = () => {
           )}
         </div>
       )}
+
+      <SuccessDialog
+        open={successDialog.open}
+        onClose={() => setSuccessDialog({ open: false, message: null })}
+        message={successDialog.message}
+      />
+
+      <ErrorDialog
+        open={errorDialog.open}
+        onClose={() => setErrorDialog({ open: false, message: null })}
+        message={errorDialog.message}
+        error={errorDialog.error}
+      />
     </div>
   );
 };

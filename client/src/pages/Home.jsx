@@ -43,7 +43,7 @@ export const Home = () => {
       {/* Content Container */}
       <div className="mx-auto max-w-7xl px-4 py-8 lg:px-8 space-y-12">
         <section>
-          <SectionHeader title="Khoa trong tầm nhìn" subtitle="Những điểm nổi bật từ cộng đồng của chúng tôi" />
+          <SectionHeader title="Về chúng tôi" subtitle="Những điểm nổi bật từ cộng đồng của chúng tôi" />
           <StatsGrid stats={stats} />
         </section>
 

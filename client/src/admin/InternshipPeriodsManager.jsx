@@ -8,6 +8,8 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { ResourceModal } from '../components/ResourceModal';
 import { ConfirmDialog } from '../components/ConfirmDialog';
+import { ErrorDialog } from '../components/ErrorDialog';
+import { SuccessDialog } from '../components/SuccessDialog';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import { ErrorState } from '../components/ErrorState';
 import { Pagination } from '../components/Pagination';
@@ -98,17 +100,31 @@ export const InternshipPeriodsManager = () => {
 
       if (editing) {
         await updateInternshipPeriod(editing.id, data, token);
+        setSuccessDialog({ 
+          open: true, 
+          message: 'Cập nhật đợt đăng ký thành công!'
+        });
       } else {
         await createInternshipPeriod(data, token);
+        setSuccessDialog({ 
+          open: true, 
+          message: 'Tạo đợt đăng ký thành công!'
+        });
       }
       handleCloseModal();
       await loadData();
     } catch (err) {
-      alert(err.message || 'Có lỗi xảy ra');
+      setErrorDialog({ 
+        open: true, 
+        message: err.message || err.error || 'Có lỗi xảy ra',
+        error: err 
+      });
     }
   };
 
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null });
+  const [errorDialog, setErrorDialog] = useState({ open: false, message: null });
+  const [successDialog, setSuccessDialog] = useState({ open: false, message: null });
 
   const handleDelete = async (id) => {
     setDeleteConfirm({ open: true, id });
@@ -118,9 +134,17 @@ export const InternshipPeriodsManager = () => {
     if (deleteConfirm.id) {
       try {
         await deleteInternshipPeriod(deleteConfirm.id, token);
+        setSuccessDialog({ 
+          open: true, 
+          message: 'Xóa đợt đăng ký thành công!'
+        });
         await loadData();
       } catch (err) {
-        alert(err.message || 'Có lỗi xảy ra');
+        setErrorDialog({ 
+          open: true, 
+          message: err.message || err.error || 'Có lỗi xảy ra',
+          error: err 
+        });
       }
     }
     setDeleteConfirm({ open: false, id: null });
@@ -307,6 +331,29 @@ export const InternshipPeriodsManager = () => {
           </div>
         </ResourceModal>
       )}
+
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onClose={() => setDeleteConfirm({ open: false, id: null })}
+        onConfirm={confirmDelete}
+        title="Xác nhận xóa"
+        message={`Bạn có chắc chắn muốn xóa đợt đăng ký này? Hành động này không thể hoàn tác.`}
+        confirmText="Xóa"
+        cancelText="Hủy"
+      />
+
+      <SuccessDialog
+        open={successDialog.open}
+        onClose={() => setSuccessDialog({ open: false, message: null })}
+        message={successDialog.message}
+      />
+
+      <ErrorDialog
+        open={errorDialog.open}
+        onClose={() => setErrorDialog({ open: false, message: null })}
+        message={errorDialog.message}
+        error={errorDialog.error}
+      />
     </div>
   );
 };

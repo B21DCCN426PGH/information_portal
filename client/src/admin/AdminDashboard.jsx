@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { fetchDashboardStats } from '../services/api';
 import { useAuth } from '../hooks/useAuth';
-import { FaClock, FaUser, FaBuilding, FaBook, FaNewspaper, FaCalendarAlt, FaBriefcase, FaGraduationCap } from 'react-icons/fa';
+import { FaClock, FaUser, FaBuilding, FaBook, FaNewspaper, FaCalendarAlt, FaBriefcase, FaGraduationCap, FaUsers } from 'react-icons/fa';
 
 export const AdminDashboard = () => {
   const { token } = useAuth();
@@ -137,6 +137,47 @@ export const AdminDashboard = () => {
           <StatCard key={stat.label} stat={stat} />
         ))}
       </div>
+
+      {/* Thống kê giảng viên theo bộ môn */}
+      {stats.lecturers_by_department && stats.lecturers_by_department.length > 0 && (
+        <div className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
+          <div className="mb-4 flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-100">
+              <FaUsers className="text-lg text-indigo-600" />
+            </div>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Giảng viên theo bộ môn</h2>
+              <p className="text-sm text-slate-500">Thống kê số lượng giảng viên của từng bộ môn</p>
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-200">
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700">Bộ môn</th>
+                  <th className="px-4 py-3 text-right text-sm font-semibold text-slate-700">Số giảng viên</th>
+                </tr>
+              </thead>
+              <tbody>
+                {stats.lecturers_by_department.map((dept) => (
+                  <tr key={dept.id || 'unassigned'} className="border-b border-slate-100 hover:bg-slate-50 transition">
+                    <td className="px-4 py-3 text-sm text-slate-900">{dept.department_name || 'Chưa phân loại'}</td>
+                    <td className="px-4 py-3 text-right text-sm font-semibold text-slate-900">{dept.lecturer_count || 0}</td>
+                  </tr>
+                ))}
+                {stats.lecturers_by_department.length > 0 && (
+                  <tr className="border-t-2 border-slate-300 bg-slate-50 font-bold">
+                    <td className="px-4 py-3 text-sm text-slate-900">Tổng cộng</td>
+                    <td className="px-4 py-3 text-right text-sm text-slate-900">
+                      {stats.lecturers_by_department.reduce((sum, dept) => sum + (dept.lecturer_count || 0), 0)}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,3 +1,5 @@
+import { formatDate } from '../utils/dateFormat';
+
 export const resourceConfigs = {
   banners: {
     resource: 'banners',
@@ -176,7 +178,11 @@ export const resourceConfigs = {
     columns: [
       { key: 'title', label: 'Tiêu đề' },
       { key: 'lead_lecturer', label: 'Giảng viên chủ trì' },
-      { key: 'publication_date', label: 'Xuất bản' },
+      { 
+        key: 'publication_date', 
+        label: 'Xuất bản',
+        render: (value) => formatDate(value)
+      },
     ],
     formFields: [
       { name: 'title', label: 'Tiêu đề', required: true },

@@ -90,6 +90,40 @@ router.get('/stats', authGuard, adminGuard, async (req, res, next) => {
       stats.total_recruitment = 0;
     }
 
+    // Thống kê giảng viên theo bộ môn
+    try {
+      const [lecturerByDeptRows] = await pool.query(
+        `SELECT 
+          d.id,
+          d.name AS department_name,
+          COUNT(l.id) AS lecturer_count
+        FROM departments d
+        LEFT JOIN lecturers l ON d.id = l.department_id
+        GROUP BY d.id, d.name
+        ORDER BY d.name`
+      );
+      
+      // Đếm giảng viên chưa có bộ môn
+      const [unassignedRows] = await pool.query(
+        `SELECT COUNT(*) AS lecturer_count FROM lecturers WHERE department_id IS NULL`
+      );
+      const unassignedCount = unassignedRows[0]?.lecturer_count || 0;
+      
+      // Thêm dòng "Chưa phân loại" nếu có giảng viên chưa có bộ môn
+      const result = [...lecturerByDeptRows];
+      if (unassignedCount > 0) {
+        result.push({
+          id: null,
+          department_name: 'Chưa phân loại',
+          lecturer_count: unassignedCount
+        });
+      }
+      
+      stats.lecturers_by_department = result;
+    } catch (err) {
+      stats.lecturers_by_department = [];
+    }
+
     res.json(stats);
   } catch (error) {
     next(error);

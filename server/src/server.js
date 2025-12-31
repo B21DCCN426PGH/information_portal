@@ -29,7 +29,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(morgan('dev'));
 
-// static files
+// File tĩnh
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
@@ -50,7 +50,7 @@ app.use('/api/internship-enterprises', internshipEnterprisesRoutes);
 app.use('/api/period-enterprises', periodEnterprisesRoutes);
 app.use('/api/internship-lecturers', internshipLecturersRoutes);
 app.use('/api/internship-registrations', internshipRegistrationsRoutes);
-// Dashboard routes: track-visit là public, stats cần auth
+// Routes dashboard: track-visit là public, stats cần xác thực
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/upload', uploadRoutes);
 
@@ -76,6 +76,7 @@ const resources = [
     searchableFields: ['name', 'email', 'phone', 'specialization'],
     authGuard,
     nullableFields: ['academic_rank'],
+    uniqueFields: ['phone'], 
   },
   {
     path: '/api/research',

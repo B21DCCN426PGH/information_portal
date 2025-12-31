@@ -29,7 +29,7 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Xử lý lỗi 401 Unauthorized
+    // Xử lý lỗi 401 Không được phép
     if (error.response?.status === 401) {
       // Xóa tất cả token khỏi localStorage
       localStorage.removeItem('admin_token');
@@ -70,7 +70,7 @@ export const request = async (config) => {
       ...config.headers,
     };
     
-    // Nếu header Authorization được cung cấp, đảm bảo nó được đặt
+    // Nếu header Authorization được cung cấp, đảm bảo nó được thiết lập
     if (config.headers?.Authorization) {
       headers.Authorization = config.headers.Authorization;
     }
@@ -89,7 +89,7 @@ export const request = async (config) => {
       if (typeof data.message === 'string') {
         message = data.message;
       } 
-      // Nếu có errors array (validation errors), format chúng
+      // Nếu có errors array (lỗi validation), định dạng chúng
       else if (Array.isArray(data.errors) && data.errors.length > 0) {
         message = data.errors.map(err => err.msg || err).join('\n');
       }
@@ -159,7 +159,7 @@ export const loginAdmin = (credentials) =>
     data: credentials,
   });
 
-// Admin management APIs (chỉ super-admin)
+// API quản lý Admin (chỉ super-admin)
 export const fetchAdmins = (token) =>
   request({ url: '/auth/admins', headers: withAuth(token) });
 
@@ -311,7 +311,7 @@ export const importStudentsFromExcel = async (file, token) => {
     });
     return response.data;
   } catch (error) {
-    let message = 'Unable to process the request';
+    let message = 'Không thể xử lý yêu cầu';
     
     if (error.response?.data) {
       const data = error.response.data;
@@ -319,7 +319,7 @@ export const importStudentsFromExcel = async (file, token) => {
       if (typeof data.message === 'string') {
         message = data.message;
       } 
-      // Nếu có errors array (validation errors), format chúng
+      // Nếu có errors array (lỗi validation), định dạng chúng
       else if (Array.isArray(data.errors) && data.errors.length > 0) {
         message = data.errors.map(err => err.msg || err).join('\n');
       }
@@ -352,7 +352,7 @@ export const updateInternshipPeriod = (id, data, token) =>
 export const deleteInternshipPeriod = (id, token) =>
   request({ method: 'DELETE', url: `/internship-periods/${id}`, headers: withAuth(token) });
 
-// Period Enterprises (Doanh nghiệp theo đợt)
+// Doanh nghiệp theo đợt
 export const getPeriodEnterprises = (params = {}) =>
   request({ url: '/period-enterprises', params });
 export const getPeriodEnterprise = (id) => request({ url: `/period-enterprises/${id}` });
