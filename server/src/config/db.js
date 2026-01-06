@@ -12,6 +12,9 @@ const pool = mysql.createPool({
   queueLimit: 0,
   enableKeepAlive: true,
   keepAliveInitialDelay: 0,
+  // Cấu hình timezone UTC+7 (Việt Nam)
+  timezone: '+07:00',
+  dateStrings: true,
 });
 
 // Test connection

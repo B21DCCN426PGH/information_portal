@@ -13,8 +13,6 @@ const buildCrudRouter = ({
 }) => {
   const router = express.Router();
 
-  //  Format date fields để tránh timezone issues
-
   const formatDateFields = (rows) => {
     if (!dateFields.length || !rows || !Array.isArray(rows)) return rows;
     
@@ -24,19 +22,12 @@ const buildCrudRouter = ({
         if (formatted[field] !== null && formatted[field] !== undefined) {
           // Nếu đã là string YYYY-MM-DD (từ DATE_FORMAT), giữ nguyên
           if (typeof formatted[field] === 'string' && formatted[field].match(/^\d{4}-\d{2}-\d{2}$/)) {
-            // Đã đúng format, giữ nguyên
-            return;
+            return; // Đã đúng format
           }
           
-          if (formatted[field] instanceof Date) {
-            // Format Date object thành YYYY-MM-DD string
-
-            const year = formatted[field].getFullYear();
-            const month = String(formatted[field].getMonth() + 1).padStart(2, '0');
-            const day = String(formatted[field].getDate()).padStart(2, '0');
-            formatted[field] = `${year}-${month}-${day}`;
-          } else if (typeof formatted[field] === 'string') {
-            // Nếu là string datetime, chỉ lấy phần date
+          // Với dateStrings: true, MySQL sẽ trả về string, không phải Date object
+          // Nhưng vẫn cần xử lý trường hợp datetime string (YYYY-MM-DD HH:mm:ss) -> YYYY-MM-DD
+          if (typeof formatted[field] === 'string') {
             if (formatted[field].includes('T')) {
               // ISO string: lấy phần trước 'T'
               formatted[field] = formatted[field].split('T')[0];
@@ -44,7 +35,6 @@ const buildCrudRouter = ({
               // MySQL datetime: lấy phần trước khoảng trắng
               formatted[field] = formatted[field].split(' ')[0];
             }
-            // Nếu đã là YYYY-MM-DD, giữ nguyên (đã check ở trên)
           }
         }
       });

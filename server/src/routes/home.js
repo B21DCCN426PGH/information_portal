@@ -22,11 +22,13 @@ router.get('/', async (req, res, next) => {
     };
 
     const [banners] = await pool.query('SELECT * FROM banners ORDER BY priority ASC, id DESC');
+    // Lấy 3 sự kiện có thời gian tạo mới nhất
     const [events] = await pool.query(
-      'SELECT * FROM events ORDER BY event_date DESC, created_at DESC LIMIT 3'
+      'SELECT * FROM events ORDER BY created_at DESC LIMIT 3'
     );
+    // Lấy 3 tin tức có thời gian tạo mới nhất
     const [news] = await pool.query(
-      'SELECT * FROM news ORDER BY published_at DESC, created_at DESC LIMIT 3'
+      'SELECT * FROM news ORDER BY created_at DESC LIMIT 3'
     );
     const [admissions] = await pool.query(
       'SELECT * FROM admissions ORDER BY admission_year DESC LIMIT 3'
